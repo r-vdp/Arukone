@@ -21,37 +21,61 @@ solve(PuzzleId, Solution) :-
     puzzle(PuzzleId, Grid, Links),
     arukone(Grid, Links, Solution).
 
-% arukone/3 - zelf te implementeren!  
-arukone(grid(N, N), Links, Solution) :-
-    occupy_initial_values(Links, Occupied),
-    find_paths(N, Links, Occupied, Solution).
+% arukone/3 
+%
+% Cut at the end after finding a path because we could assume that every puzzle
+% has a unique solution. Backtracking is thus guaranteed to be useless.
+arukone(Grid, Links, Solution) :-
+    to_occupied(Links, Occupied),
+    find_paths(Grid, Links, Occupied, Solution),
+    !.
 
-occupy_initial_values([], []).
-occupy_initial_values([link(_, Pos1, Pos2) | Links], [Pos1, Pos2 | Tail]) :-
-    occupy_initial_values(Links, Tail).
+% to_occupied(Links, Occupied) succeeds if Occupied is a list of pos terms
+% consisting of the two positions in each link term that is contained in Links.
+to_occupied([], []).
+to_occupied([link(_, Pos1, Pos2) | Links], [Pos1, Pos2 | Tail]) :-
+    to_occupied(Links, Tail).
 
-find_path(From, To, Occupied, N, [From, To], Occupied) :-
-    neighbours(From, To, N).
-find_path(From, To, Occupied, N, [From|SubPath], NewOccupied) :-
-    neighbours(From, Node, N),
-    \+ member(Node, Occupied),
-    find_path(Node, To, [Node|Occupied], N, SubPath, NewOccupied).
-    
 find_paths(_, [], _, []).
-find_paths(N, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths]) :-
-    find_path(From, To, Occupied, N, Path, NewOccupied),
-    find_paths(N, Links, NewOccupied, Paths).
+find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths]) :-
+    find_path(Grid, From, To, Occupied, Path, NewOccupied),
+    find_paths(Grid, Links, NewOccupied, Paths).
+
+find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
+    neighbours(From, To, Grid).
+find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
+    best_neighbour(From, To, Grid, Node),
+    \+ member(Node, Occupied),
+    find_path(Grid, Node, To, [Node|Occupied], SubPath, NewOccupied).
+
+best_neighbour(From, To, Grid, Neighbour) :-
+    sorted_neighbours(From, To, Grid, Neighbours),
+    member((To, Neighbour), Neighbours).
+
+sorted_neighbours(From, To, Grid, Neighbours) :-
+    findall((To, Neighbour), neighbours(From, Neighbour, Grid), UnsortedNeighbours),
+    predsort(towards_goal_ordering, UnsortedNeighbours, Neighbours).
+
+towards_goal_ordering(Delta, (To, pos(TR1, TC1)), (To, pos(TR2, TC2))) :-
+    To = pos(TR, TC),
+    (abs(TR - TR1) + abs(TC - TC1) < abs(TR - TR2) + abs(TC - TC2) ->
+        Delta = <
+    ;
+        Delta = >
+    ).
+
+orig_ordering(<, _, _).
 
 neighbours(pos(A, B), pos(C, B), _) :-
     A > 1,
     C is A - 1.
-neighbours(pos(A, B), pos(C, B), N) :-
+neighbours(pos(A, B), pos(C, B), grid(N, _)) :-
     A < N,
     C is A + 1.
 neighbours(pos(A, B), pos(A, C), _) :-
     B > 1,
     C is B - 1.
-neighbours(pos(A, B), pos(A, C), N) :-
+neighbours(pos(A, B), pos(A, C), grid(_, N)) :-
     B < N,
     C is B + 1.
 
