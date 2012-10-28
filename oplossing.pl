@@ -27,7 +27,8 @@ solve(PuzzleId, Solution) :-
 % has a unique solution. Backtracking is thus guaranteed to be useless.
 arukone(Grid, Links, Solution) :-
     to_occupied(Links, Occupied),
-    find_paths(Grid, Links, Occupied, Solution),
+    order_links(Links, OrderedLinks),
+    find_paths(Grid, OrderedLinks, Occupied, Solution),
     !.
 
 % to_occupied(Links, Occupied) succeeds if Occupied is a list of pos terms
@@ -50,21 +51,11 @@ find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
 
 best_neighbour(From, To, Grid, Neighbour) :-
     sorted_neighbours(From, To, Grid, Neighbours),
-    member((To, Neighbour), Neighbours).
+    member((_, _, Neighbour), Neighbours).
 
 sorted_neighbours(From, To, Grid, Neighbours) :-
-    findall((To, Neighbour), neighbours(From, Neighbour, Grid), UnsortedNeighbours),
-    predsort(towards_goal_ordering, UnsortedNeighbours, Neighbours).
-
-towards_goal_ordering(Delta, (To, pos(TR1, TC1)), (To, pos(TR2, TC2))) :-
-    To = pos(TR, TC),
-    (abs(TR - TR1) + abs(TC - TC1) < abs(TR - TR2) + abs(TC - TC2) ->
-        Delta = <
-    ;
-        Delta = >
-    ).
-
-orig_ordering(<, _, _).
+    findall((From, To, Neighbour), neighbours(From, Neighbour, Grid), UnsortedNeighbours),
+    predsort(current_ordering, UnsortedNeighbours, Neighbours).
 
 neighbours(pos(A, B), pos(C, B), _) :-
     A > 1,
@@ -79,4 +70,70 @@ neighbours(pos(A, B), pos(A, C), grid(_, N)) :-
     B < N,
     C is B + 1.
 
+
+%%%%%%%%% Orderings %%%%%%%%%
+
+current_ordering(Delta, A, B) :-
+    orig_ordering(Delta, A, B).
+    %random_ordering(Delta, A, B).
+    %towards_goal_ordering(Delta, A, B).
+    %towards_goal2(Delta, A, B).
     
+
+orig_ordering(<, _, _).
+
+% towards_goal_ordering(Delta, (From, To, Node1), (From, To, Node2)) is an ordering
+% key to be used with predsort, it returns < if Node1 is closer to To than Node2.
+towards_goal_ordering(Delta, (_, Goal, pos(R1, C1)), (_, Goal, pos(R2, C2))) :-
+    Goal = pos(RG, CG),
+    compare_no_equals(Delta, abs(RG - R1) + abs(CG - C1), (abs(RG - R2) + abs(CG - C2))).
+
+towards_goal2(Delta, (From, To, pos(_, C1)), (From, To, pos(_, C2))) :-
+    From = pos(R, _),
+    To = pos(R, C),
+    Length1 is abs(C - C1),
+    Length2 is abs(C - C2),
+    compare_no_equals(Delta, Length1, Length2).
+towards_goal2(Delta, (From, To, pos(R1, _)), (From, To, pos(R2, _))) :-
+    From = pos(_, C),
+    To = pos(R, C),
+    Length1 is abs(R - R1),
+    Length2 is abs(R - R2),
+    compare_no_equals(Delta, Length1, Length2).
+towards_goal2(Delta, (From, To, pos(R1, C1)), (From, To, pos(R2, C2))) :-
+    From = pos(FromR, FromC),
+    To = pos(R, C),
+    R =\= FromR,
+    C =\= FromC,
+    Length1 is abs(R - R1) + abs(C - C1),
+    Length2 is abs(R - R2) + abs(C - C2),
+    compare_no_equals(Delta, Length1, Length2).
+
+compare_no_equals(Delta, A, B) :-
+    ( A < B ->
+        Delta = <
+    ;
+        Delta = >
+    ).
+
+random_ordering(Delta, _, _) :-
+    ( 0 =:= random(2) ->
+        Delta = <
+    ;
+        Delta = >
+    ).
+
+
+order_links(Links, OrderedLinks) :-
+    predsort(longest_paths_first, Links, OrderedLinks).
+
+shortest_paths_first(Delta, link(_, pos(R1, C1), pos(R2, C2)), link(_, pos(R3, C3), pos(R4, C4))) :-
+    Diff1 is abs(R1 - R2) + abs(C1 - C2),
+    Diff2 is abs(R3 - R4) + abs(C3 - C4),
+    compare_no_equals(Delta, Diff1, Diff2).
+
+longest_paths_first(Delta, link(_, pos(R1, C1), pos(R2, C2)), link(_, pos(R3, C3), pos(R4, C4))) :-
+    Diff1 is abs(R1 - R2) + abs(C1 - C2),
+    Diff2 is abs(R3 - R4) + abs(C3 - C4),
+    compare_no_equals(Delta, Diff2, Diff1).
+
