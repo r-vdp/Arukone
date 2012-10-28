@@ -45,16 +45,18 @@ find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|P
 find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
     neighbours(From, To, Grid).
 find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
-    best_neighbour(From, To, Grid, Node),
-    \+ member(Node, Occupied),
+    \+ neighbours(From, To, Grid),
+    best_neighbour(From, To, Grid, Occupied, Node),
     find_path(Grid, Node, To, [Node|Occupied], SubPath, NewOccupied).
 
-best_neighbour(From, To, Grid, Neighbour) :-
-    sorted_neighbours(From, To, Grid, Neighbours),
-    member((_, _, Neighbour), Neighbours).
+best_neighbour(From, To, Grid, Occupied, Neighbour) :-
+    sorted_neighbours(From, To, Grid, Occupied, Neighbours),
+    member((From, To, Grid, Neighbour), Neighbours).
 
-sorted_neighbours(From, To, Grid, Neighbours) :-
-    findall((From, To, Neighbour), neighbours(From, Neighbour, Grid), UnsortedNeighbours),
+sorted_neighbours(From, To, Grid, Occupied, Neighbours) :-
+    findall((From, To, Grid, Neighbour),
+            (neighbours(From, Neighbour, Grid), \+ member(Neighbour, Occupied)),
+            UnsortedNeighbours),
     predsort(current_ordering, UnsortedNeighbours, Neighbours).
 
 neighbours(pos(A, B), pos(C, B), _) :-
@@ -74,33 +76,38 @@ neighbours(pos(A, B), pos(A, C), grid(_, N)) :-
 %%%%%%%%% Orderings %%%%%%%%%
 
 current_ordering(Delta, A, B) :-
-    orig_ordering(Delta, A, B).
+    %orig_ordering(Delta, A, B).
+    along_border_ordering(Delta, A, B).
     %random_ordering(Delta, A, B).
     %towards_goal_ordering(Delta, A, B).
     %towards_goal2(Delta, A, B).
+    %combined(Delta, A, B).
     
 
 orig_ordering(<, _, _).
 
-% towards_goal_ordering(Delta, (From, To, Node1), (From, To, Node2)) is an ordering
-% key to be used with predsort, it returns < if Node1 is closer to To than Node2.
-towards_goal_ordering(Delta, (_, Goal, pos(R1, C1)), (_, Goal, pos(R2, C2))) :-
+% towards_goal_ordering(Delta, (From, To, Grid, Node1), (From, To, Grid, Node2))
+% is an ordering key to be used with predsort, it returns < if Node1 is closer
+% to To than Node2.
+towards_goal_ordering(Delta, (_, Goal, _, pos(R1, C1)), (_, Goal, _, pos(R2, C2))) :-
     Goal = pos(RG, CG),
-    compare_no_equals(Delta, abs(RG - R1) + abs(CG - C1), (abs(RG - R2) + abs(CG - C2))).
+    Diff1 = abs(RG - R1) + abs(CG - C1),
+    Diff2 = abs(RG - R2) + abs(CG - C2),
+    compare_no_equals(Delta, Diff1, Diff2).
 
-towards_goal2(Delta, (From, To, pos(_, C1)), (From, To, pos(_, C2))) :-
+towards_goal2(Delta, (From, To, _, pos(_, C1)), (From, To, _, pos(_, C2))) :-
     From = pos(R, _),
     To = pos(R, C),
     Length1 is abs(C - C1),
     Length2 is abs(C - C2),
     compare_no_equals(Delta, Length1, Length2).
-towards_goal2(Delta, (From, To, pos(R1, _)), (From, To, pos(R2, _))) :-
+towards_goal2(Delta, (From, To, _, pos(R1, _)), (From, To, _, pos(R2, _))) :-
     From = pos(_, C),
     To = pos(R, C),
     Length1 is abs(R - R1),
     Length2 is abs(R - R2),
     compare_no_equals(Delta, Length1, Length2).
-towards_goal2(Delta, (From, To, pos(R1, C1)), (From, To, pos(R2, C2))) :-
+towards_goal2(Delta, (From, To, _, pos(R1, C1)), (From, To, _, pos(R2, C2))) :-
     From = pos(FromR, FromC),
     To = pos(R, C),
     R =\= FromR,
@@ -109,6 +116,23 @@ towards_goal2(Delta, (From, To, pos(R1, C1)), (From, To, pos(R2, C2))) :-
     Length2 is abs(R - R2) + abs(C - C2),
     compare_no_equals(Delta, Length1, Length2).
 
+
+along_border_ordering(Delta, (From, To, Grid, _), (From, To, Grid, Second)) :-
+    ( on_border(Second, Grid) ->
+        Delta = >
+    ;
+        Delta = <
+    ).
+
+on_border(pos(0, _), _).
+on_border(pos(R, 0), _) :- 
+    R \== 0.
+on_border(pos(N, C), grid(N, _)) :-
+    C \== 0.
+on_border(pos(R, M), grid(N, M)):- 
+    R \== 0,
+    R \== N.
+   
 compare_no_equals(Delta, A, B) :-
     ( A < B ->
         Delta = <
@@ -123,6 +147,17 @@ random_ordering(Delta, _, _) :-
         Delta = >
     ).
 
+combined(<, (_, _, Grid, First), _) :-
+    on_border(First, Grid).
+combined(>, (From, To, Grid, First), (From, To, Grid, Second)) :-
+    \+ on_border(First, Grid),
+    on_border(Second, Grid).
+combined(Delta, Node1, Node2) :-
+    Node1 = (_, _, Grid, First),
+    Node2 = (_, _, Grid, Second),
+    \+ on_border(First, Grid),
+    \+ on_border(Second, Grid),
+    towards_goal_ordering(Delta, Node1, Node2).
 
 order_links(Links, OrderedLinks) :-
     predsort(longest_paths_first, Links, OrderedLinks).
