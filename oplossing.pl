@@ -15,6 +15,7 @@
 
 :- ensure_loaded(puzzels).
 :- ensure_loaded(visualisatie).
+:- ensure_loaded(library(assoc)).
 
 % solve/2
 solve(PuzzleId, Solution) :-
@@ -26,23 +27,23 @@ solve(PuzzleId, Solution) :-
 % Cut at the end after finding a path because we could assume that every puzzle
 % has a unique solution. Backtracking is thus guaranteed to be useless.
 arukone(Grid, Links, Solution) :-
-    init_occupied(Links, Grid, Occupied),
+    init_occupied(Links, Occupied),
     order_links(Links, OrderedLinks),
     find_paths(Grid, OrderedLinks, Occupied, Solution),
     !.
 
 find_paths(_, [], _, []).
 find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths]) :-
-    find_path(Grid, From, To, Occupied, Path),
-    find_paths(Grid, Links, Occupied, Paths).
+    find_path(Grid, From, To, Occupied, Path, NewOccupied),
+    find_paths(Grid, Links, NewOccupied, Paths).
 
-find_path(Grid, From, To, _, [From, To]) :-
+find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
     neighbours(From, To, Grid).
-find_path(Grid, From, To, Occupied, [From|SubPath]) :-
+find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
     \+ neighbours(From, To, Grid),
     best_neighbour(From, To, Grid, Occupied, Node),
-    set_occupied(Node, Grid, Occupied),
-    find_path(Grid, Node, To, Occupied, SubPath).
+    set_occupied(Node, Occupied, Occupied2),
+    find_path(Grid, Node, To, Occupied2, SubPath, NewOccupied).
 
 best_neighbour(From, To, Grid, Occupied, Neighbour) :-
     sorted_neighbours(From, To, Grid, Occupied, Neighbours),
@@ -50,33 +51,29 @@ best_neighbour(From, To, Grid, Occupied, Neighbour) :-
 
 sorted_neighbours(From, To, Grid, Occupied, Neighbours) :-
     findall((From, To, Grid, Neighbour),
-            (neighbours(From, Neighbour, Grid), \+ is_occupied(Neighbour, Grid, Occupied)),
+            (neighbours(From, Neighbour, Grid), \+ is_occupied(Neighbour, Occupied)),
             UnsortedNeighbours),
     order_neighbours(UnsortedNeighbours, Neighbours).
 
 
-init_occupied(Links, Grid, Occupied) :-
-    create_occupied(Grid, Occupied),
-    fill_occupied(Links, Grid, Occupied).
+init_occupied(Links, Occupied) :-
+    create_occupied(EmptyOccupied),
+    fill_occupied(Links, EmptyOccupied, Occupied).
 
-create_occupied(grid(N, M), Occupied) :-
-    Size is N * M,
-    functor(Occupied, occupied, Size).
+create_occupied(Occupied) :-
+    empty_assoc(Occupied).
 
-fill_occupied([], _, _).
-fill_occupied([link(_, First, Second) | Links], Grid, Occupied) :-
-    set_occupied(First, Grid, Occupied),
-    set_occupied(Second, Grid, Occupied),
-    fill_occupied(Links, Grid, Occupied).
+fill_occupied([], Occupied, Occupied).
+fill_occupied([link(_, First, Second) | Links], Occupied, NewOccupied) :-
+    set_occupied(First, Occupied, Occupied2),
+    set_occupied(Second, Occupied2, Occupied3),
+    fill_occupied(Links, Occupied3, NewOccupied).
 
-set_occupied(pos(R, C), grid(N, _), Occupied) :-
-    Idx is ((R - 1) * N) + C,
-    arg(Idx, Occupied, true).
+set_occupied(Pos, Occupied, NewOccupied) :-
+    put_assoc(Pos, Occupied, true, NewOccupied).
 
-is_occupied(pos(R, C), grid(_, N), Occupied) :-
-    Idx is ((R - 1) * N) + C,
-    arg(Idx, Occupied, Result),
-    Result == true.
+is_occupied(Pos, Occupied) :-
+    get_assoc(Pos, Occupied, _).
 
 
 neighbours(pos(A, B), pos(C, B), _) :-
