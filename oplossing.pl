@@ -27,7 +27,7 @@ solve(PuzzleId, Solution) :-
 % has a unique solution. Backtracking is thus guaranteed to be useless.
 arukone(Grid, Links, Solution) :-
     init_occupied(Links, Occupied),
-    order_links(Links, OrderedLinks),
+    order_links(Links, Grid, OrderedLinks),
     find_paths(Grid, OrderedLinks, Occupied, Solution),
     !.
 
@@ -103,13 +103,37 @@ set_occupied(pos(R, C), [(Row, Columns)|Occupied]-OTail, Acc-ATail, NewOccupied)
 
 %%%%%%%%% Orderings %%%%%%%%%
 
-order_links(Links, OrderedLinks) :-
-    predsort(longest_paths_first, Links, OrderedLinks).
+order_links(Links, Grid, OrderedLinks) :-
+    findall((Link, Grid), member(Link, Links), NewLinks),
+    predsort(link_ordering, NewLinks, TmpOrderedLinks),
+    findall(Link, member((Link, Grid), TmpOrderedLinks), OrderedLinks).
 
-longest_paths_first(Delta, link(_, pos(R1, C1), pos(R2, C2)), link(_, pos(R3, C3), pos(R4, C4))) :-
+link_ordering(Delta, Tuple1, Tuple2) :-
+    combine(on_border_link_ordering, longest_paths_first, Delta, Tuple1, Tuple2).
+
+on_border_link_ordering(<, (Link, Grid), _) :-
+    on_border_link(Link, Grid).
+on_border_link_ordering(>, (Link1, Grid), (Link2, Grid)) :-
+    \+ on_border_link(Link1, Grid),
+    on_border_link(Link2, Grid).
+on_border_link_ordering(=, (Link1, Grid), (Link2, Grid)) :-
+    \+ on_border_link(Link1, Grid),
+    \+ on_border_link(Link2, Grid).
+
+longest_paths_first(Delta, (link(_, pos(R1, C1), pos(R2, C2)), _), (link(_, pos(R3, C3), pos(R4, C4)), _)) :-
     Diff1 is abs(R1 - R2) + abs(C1 - C2),
     Diff2 is abs(R3 - R4) + abs(C3 - C4),
     compare_no_equals(Delta, Diff2, Diff1).
+
+combine(Pred1, Pred2, Delta, First, Second) :-
+    Term1 =.. [Pred1, D1, First, Second],
+    call(Term1),
+    ( D1 == (=) ->
+        Term2 =.. [Pred2, Delta, First, Second],
+        call(Term2)
+    ;
+        Delta = D1
+    ).
 
 order_neighbours(Neighbours, OrderedNeighbours) :-
     predsort(along_border_ordering, Neighbours, OrderedNeighbours).
@@ -129,6 +153,10 @@ on_border(pos(N, C), grid(N, _)) :-
 on_border(pos(R, M), grid(N, M)):- 
     R =\= 1,
     R =\= N.
+
+on_border_link(link(_, From, To), Grid) :-
+    on_border(From, Grid),
+    on_border(To, Grid).
 
 compare_no_equals(Delta, A, B) :-
     ( A < B ->
