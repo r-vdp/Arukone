@@ -31,12 +31,6 @@ arukone(Grid, Links, Solution) :-
     find_paths(Grid, OrderedLinks, Occupied, Solution),
     !.
 
-% to_occupied(Links, Occupied) succeeds if Occupied is a list of pos terms
-% consisting of the two positions in each link term that is contained in Links.
-to_occupied([], []).
-to_occupied([link(_, Pos1, Pos2) | Links], [Pos1, Pos2 | Tail]) :-
-    to_occupied(Links, Tail).
-
 find_paths(_, [], _, []).
 find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths]) :-
     find_path(Grid, From, To, Occupied, Path, NewOccupied),
@@ -49,6 +43,7 @@ find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
     best_neighbour(From, To, Grid, Occupied, Node),
     set_occupied(Node, Occupied, Occupied2),
     find_path(Grid, Node, To, Occupied2, SubPath, NewOccupied).
+
 
 best_neighbour(From, To, Grid, Occupied, Neighbour) :-
     sorted_neighbours(From, To, Grid, Occupied, Neighbours),
