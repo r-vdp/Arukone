@@ -121,14 +121,14 @@ along_border_ordering(Delta, (From, To, Grid, _), (From, To, Grid, Second)) :-
         Delta = <
     ).
 
-on_border(pos(0, _), _).
-on_border(pos(R, 0), _) :- 
-    R \== 0.
+on_border(pos(1, _), _).
+on_border(pos(R, 1), _) :- 
+    R =\= 1.
 on_border(pos(N, C), grid(N, _)) :-
-    C \== 0.
+    C =\= 1.
 on_border(pos(R, M), grid(N, M)):- 
-    R \== 0,
-    R \== N.
+    R =\= 1,
+    R =\= N.
 
 compare_no_equals(Delta, A, B) :-
     ( A < B ->
