@@ -242,18 +242,3 @@ on_border(pos(R, M), grid(N, M)):-
     R =\= 1,
     R =\= N.
 
-any_on_border(link(_, From, _), Grid) :-
-    on_border(From, Grid).
-any_on_border(link(_, From, To), Grid) :-
-    \+ on_border(From, Grid),
-    on_border(To, Grid).
-
-any_on_border_link_ordering(<, (Link, Grid), _) :-
-    any_on_border(Link, Grid).
-any_on_border_link_ordering(>, (Link1, Grid), (Link2, Grid)) :-
-    \+ any_on_border(Link1, Grid),
-    any_on_border(Link2, Grid).
-any_on_border_link_ordering(=, (Link1, Grid), (Link2, Grid)) :-
-    \+ any_on_border(Link1, Grid),
-    \+ any_on_border(Link2, Grid).
-
