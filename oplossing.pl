@@ -1,17 +1,59 @@
 % Ramses De Norre
 % Andere
 
-% Bewaar dit bestand als oplossing.pl en implementeer het predicaat arukone/3.
-% Documenteer de oplossingsstrategie van je oplossing op hoog niveau.
-% Documenteer de heuristieken en optimalisaties die je toepast.
-% Besteed voldoende aandacht aan de leesbaarheid en indentatie van je code.
-% Splits lange predicaten in korte predicaten die elk een eigen taak vervullen.
-% Documenteer de beoogde functionaliteit van de afzonderlijke predicaten.
-% Documenteer eventuele gekende problemen en leg uit hoe je deze op kan lossen.
-% Verwijder deze lijst met aandachtspunten alvorens je oplossing in te dienen.
-% 
-% ^^^^^^^^^^^^^^^ TODO TODO TODO ^^^^^^^^^^^^^^^
+% Oplossingsstrategie: de basisstrategie bestaat eruit om voor elk getal een pad
+%                      te zoeken tussen de twee voorkomens van dat getal zonder
+%                      gebruik te maken van "occupied" posities, i.e. posities
+%                      die reeds zijn ingenomen door andere paden, inclusief de
+%                      gegeven getallen.
+%                      Wanneer zo'n pad niet kan gevonden worden, worden via
+%                      backtracking alternatieve paden uitgeprobeerd totdat voor
+%                      elk getal een pad gevonden is.
 %
+% Heuristieken:        Heuristieken kunnen op twee plaatsen toegepast worden,
+%                      bij het ordenen van de links in het begin om te beslissen
+%                      in welke volgorde er voor de verschillende getallen paden
+%                      worden gezocht en bij het beslissen in welke volgorde de
+%                      verschillende mogelijke richtingen om een pad te
+%                      verlengen, geprobeerd worden.
+%
+%                      Tijdens het experimenteren bleek dat de overhead van een
+%                      te complexe heuristiek voor het verlengen van een pad al
+%                      snel nadelige gevolgen had op de performantie, dus ik heb
+%                      een redelijk eenvoudige heuristiek gebruikt (eerst langs
+%                      de kanten proberen paden op te bouwen) die goed
+%                      samenwerkt met de heuristiek om de links te ordenen.
+%
+%                      Voor de links kon een duurdere heuristiek toegepast
+%                      worden omdat deze heursitiek slechts eenmaal gebruikt
+%                      wordt om een lijst te ordenen. Hier bleek uit
+%                      experimenten dat een gecombineerd criterium het beste
+%                      resultaat gaf: ik neem eerst links waarvan beide posities
+%                      op de rand van de puzzel liggen, vervolgens sorteer ik de
+%                      andere links volgens de afstand tussen hun posities
+%                      waarbij links met een grotere afstand eerst worden bekeken.
+%
+% Optimalisaties:      Naast de heuristieken heb ik aandacht besteed aan de
+%                      datastructuur voor de "occupied" posities, daar profiling
+%                      aanwees dat een simpele lineaire lijst van bezette
+%                      posities als gevolg had dat bijna 50% van de
+%                      uitvoeringstijd aan occupied-checks besteed werd.
+%                      De alternatieven waren:
+%                        * een array structuur met directed access simuleren met
+%                          functor/arg predicaten (zie Bratko sectie 8.5.4).
+%                          Dit was de snelste structuur maar omdat dit niet zo'n
+%                          idiomatische prolog code is, heb ik hier toch niet
+%                          voor geopteerd.
+%                        * de assoc library:
+%                            http://www.swi-prolog.org/pldoc/doc_for?object=section%282,%27A.3%27,swi%28%27/doc/Manual/assoc.html%27%29%29
+%                          deze gaf, ondanks log(n) complexiteit, echter zeer
+%                          veel overhead.
+%                        * een zelf geimplementeerde structuur bestaande uit een
+%                          lijst van paren waarvan de eerste component een
+%                          rijnummer is en de tweede een lijst van de
+%                          kolomnummers die bezet zijn in die rij.
+%                          Deze datastructuur heeft lineaire complexiteit voor
+%                          zowel updates als insertions.
 
 :- ensure_loaded(puzzels).
 :- ensure_loaded(visualisatie).
