@@ -87,24 +87,34 @@ find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|P
 % puzzle and if so, swaps From and To before calling do_find_path.
 find_path(Grid, From, To, Occupied, Path, NewOccupied) :-
     ( on_border(To, Grid) ->
-        do_find_path(Grid, To, From, Occupied, Path, NewOccupied)
+        do_find_path(Grid, To, From, Occupied, [], Path, NewOccupied)
     ;
-        do_find_path(Grid, From, To, Occupied, Path, NewOccupied)
+        do_find_path(Grid, From, To, Occupied, [], Path, NewOccupied)
     ).
 
-% do_find_path(Grid, From, To, Occupied, Path, NewOccupied) succeeds if Path is
-% a path from From to To in a puzzle of size described by Grid and if that path
-% does not use a position included in Occupied list.
+% do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) succeeds
+% if Path is the concatenation of the path contained in PathAcc and a path
+% from From to To in a puzzle described by Grid and if that path does not use
+% any position included in Occupied.
 % NewOccupied is the new list of occupied positions which is the concatenation
 % of Occupied and the positions used by Path.
+do_find_path(Grid, From, To, Occupied, PathAcc, [To,From|PathAcc], Occupied) :-
+    neighbours(From, To, Grid).
+do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) :-
+    \+ neighbours(From, To, Grid),
+    best_neighbour(From, Grid, Occupied, Node),
+    set_occupied(Node, Occupied, Occupied2),
+    do_find_path_acc(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
+
+/*
 do_find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
     neighbours(From, To, Grid).
 do_find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
     \+ neighbours(From, To, Grid),
     best_neighbour(From, Grid, Occupied, Node),
     set_occupied(Node, Occupied, Occupied2),
-    find_path(Grid, Node, To, Occupied2, SubPath, NewOccupied).
-
+    do_find_path(Grid, Node, To, Occupied2, SubPath, NewOccupied).
+*/
 
 %%%%%%%%% Neighbours %%%%%%%%%
 
