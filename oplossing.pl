@@ -82,14 +82,24 @@ find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|P
     find_path(Grid, From, To, Occupied, Path, NewOccupied),
     find_paths(Grid, Links, NewOccupied, Paths).
 
-% find_path(Grid, From, To, Occupied, Path, NewOccupied) succeeds if Path is a
-% path from From to To in a puzzle of size described by Grid and if that path
+% find_path(Grid, From, To, Occupied, Path, NewOccupied) is a wrapper around the
+% do_find_path predicate which checks whether To lies on the border of the
+% puzzle and if so, swaps From and To before calling do_find_path.
+find_path(Grid, From, To, Occupied, Path, NewOccupied) :-
+    ( on_border(To, Grid) ->
+        do_find_path(Grid, To, From, Occupied, Path, NewOccupied)
+    ;
+        do_find_path(Grid, From, To, Occupied, Path, NewOccupied)
+    ).
+
+% do_find_path(Grid, From, To, Occupied, Path, NewOccupied) succeeds if Path is
+% a path from From to To in a puzzle of size described by Grid and if that path
 % does not use a position included in Occupied list.
 % NewOccupied is the new list of occupied positions which is the concatenation
 % of Occupied and the positions used by Path.
-find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
+do_find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
     neighbours(From, To, Grid).
-find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
+do_find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
     \+ neighbours(From, To, Grid),
     best_neighbour(From, Grid, Occupied, Node),
     set_occupied(Node, Occupied, Occupied2),
