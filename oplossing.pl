@@ -104,7 +104,7 @@ do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) :-
     \+ neighbours(From, To, Grid),
     best_neighbour(From, Grid, Occupied, Node),
     set_occupied(Node, Occupied, Occupied2),
-    do_find_path_acc(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
+    do_find_path(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
 
 /*
 do_find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
