@@ -70,27 +70,25 @@ solve(PuzzleId, Solution) :-
 arukone(Grid, Links, Solution) :-
     init_occupied(Links, Occupied),
     sort_links(Links, Grid, OrderedLinks),
-    find_paths(Grid, OrderedLinks, Occupied, Solution),
+    find_paths(Grid, OrderedLinks, Occupied, Solution, TotalOccupied),
+    all_occupied(TotalOccupied, Grid),
     !.
 
 % find_paths(Grid, Links, Occupied, Paths) succeeds if Paths is a list of
 % connects terms which represent the paths needed to connect all links from
 % Links in a puzzle where the positions contained in Occupied are already
 % occupied and which has a size described by Grid.
-find_paths(_, [], _, []).
-find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths]) :-
+find_paths(_, [], Occupied, [], Occupied).
+find_paths(Grid, [link(Type, From, To)|Links], Occupied, [connects(Type, Path)|Paths], TotalOccupied) :-
     find_path(Grid, From, To, Occupied, Path, NewOccupied),
-    find_paths(Grid, Links, NewOccupied, Paths).
+    find_paths(Grid, Links, NewOccupied, Paths, TotalOccupied).
 
 % find_path(Grid, From, To, Occupied, Path, NewOccupied) is a wrapper around the
 % do_find_path predicate which checks whether To lies on the border of the
 % puzzle and if so, swaps From and To before calling do_find_path.
 find_path(Grid, From, To, Occupied, Path, NewOccupied) :-
-    ( on_border(To, Grid) ->
-        do_find_path(Grid, To, From, Occupied, [], Path, NewOccupied)
-    ;
-        do_find_path(Grid, From, To, Occupied, [], Path, NewOccupied)
-    ).
+    optimise(From, To, Grid, NewFrom, NewTo),
+    do_find_path(Grid, NewFrom, NewTo, Occupied, [], Path, NewOccupied).
 
 % do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) succeeds
 % if Path is the concatenation of the path contained in PathAcc and a path
@@ -106,15 +104,24 @@ do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) :-
     set_occupied(Node, Occupied, Occupied2),
     do_find_path(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
 
-/*
-do_find_path(Grid, From, To, Occupied, [From, To], Occupied) :-
-    neighbours(From, To, Grid).
-do_find_path(Grid, From, To, Occupied, [From|SubPath], NewOccupied) :-
-    \+ neighbours(From, To, Grid),
-    best_neighbour(From, Grid, Occupied, Node),
-    set_occupied(Node, Occupied, Occupied2),
-    do_find_path(Grid, Node, To, Occupied2, SubPath, NewOccupied).
-*/
+optimise(From, To, Grid, NewFrom, NewTo) :-
+    ( on_border(To, Grid) ->
+        NewFrom = To,
+        NewTo   = From
+    ;
+        NewFrom = From,
+        NewTo   = To
+    ).
+
+all_occupied(Occupied, grid(N, M)) :-
+    length(Occupied, N),
+    all_columns_full(Occupied, M).
+
+all_columns_full([], _).
+all_columns_full([(_, Column) | Tail], M) :-
+    length(Column, M),
+    all_columns_full(Tail, M).
+
 
 %%%%%%%%% Neighbours %%%%%%%%%
 
@@ -236,6 +243,7 @@ combine([Pred|Preds], First, Second, Delta) :-
     ;
         Delta = NewDelta
     ).
+
 % all_on_border_link_ordering(Delta, Link1, Link2) succeeds if Delta labels a
 % link of which both positions lie on the border of the puzzle described by Grid
 % as smaller then another link.
