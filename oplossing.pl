@@ -8,7 +8,8 @@
 %                      gegeven getallen.
 %                      Wanneer zo'n pad niet kan gevonden worden, worden via
 %                      backtracking alternatieve paden uitgeprobeerd totdat voor
-%                      elk getal een pad gevonden is.
+%                      elk getal een pad gevonden is en alle posities ingenomen
+%                      zijn.
 %
 % Heuristieken:        Heuristieken kunnen op twee plaatsen toegepast worden,
 %                      bij het ordenen van de links in het begin om te beslissen
@@ -100,9 +101,10 @@ do_find_path(Grid, From, To, Occupied, PathAcc, [To,From|PathAcc], Occupied) :-
     neighbours(From, To, Grid).
 do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) :-
     \+ neighbours(From, To, Grid),
-    best_neighbour(From, Grid, Occupied, Node),
+    optimise(From, To, Grid, NewFrom, NewTo),
+    best_neighbour(NewFrom, Grid, Occupied, Node),
     set_occupied(Node, Occupied, Occupied2),
-    do_find_path(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
+    do_find_path(Grid, Node, NewTo, Occupied2, [NewFrom|PathAcc], Path, NewOccupied).
 
 optimise(From, To, Grid, NewFrom, NewTo) :-
     ( on_border(To, Grid) ->
