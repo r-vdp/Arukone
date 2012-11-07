@@ -104,6 +104,11 @@ do_find_path(Grid, From, To, Occupied, PathAcc, Path, NewOccupied) :-
     set_occupied(Node, Occupied, Occupied2),
     do_find_path(Grid, Node, To, Occupied2, [From|PathAcc], Path, NewOccupied).
 
+% optimise(From, To, Grid, NewFrom, NewTo) succeeds if NewFrom and NewTo are the
+% best start and end point to continue searching for a path between them.
+% The criterium is whether To lies on the border, if so, To and from are swapped.
+% This is done such that we prefer building the path starting with a node on the
+% border, because there are less possible ways to choose from then.
 optimise(From, To, Grid, NewFrom, NewTo) :-
     ( on_border(To, Grid) ->
         NewFrom = To,
@@ -113,10 +118,15 @@ optimise(From, To, Grid, NewFrom, NewTo) :-
         NewTo   = To
     ).
 
+% all_occupied(Occupied, Grid) succeeds if all positions in the puzzle described
+% by Grid are contained in Occupied.
 all_occupied(Occupied, grid(N, M)) :-
     length(Occupied, N),
     all_columns_full(Occupied, M).
 
+% all_colums_full(List, ColumnSize) succeeds if for all columns contained in List,
+% which contains tuples (rownumber, column), all positions in the column are full.
+% ColumnSize is the length of columns in the puzzle.
 all_columns_full([], _).
 all_columns_full([(_, Column) | Tail], M) :-
     length(Column, M),
