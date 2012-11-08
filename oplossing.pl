@@ -147,7 +147,7 @@ best_neighbour(From, Grid, Occupied, Neighbour) :-
 % not a member of Occupied, sorted by the sort_neighbours predicate.
 sorted_neighbours(From, Grid, Occupied, Neighbours) :-
     findall((Grid, Neighbour),
-            (neighbours(From, Neighbour, Grid), \+ is_occupied(Neighbour, Occupied)),
+            (neighbours(From, Neighbour, Grid), unoccupied(Neighbour, Occupied)),
             UnsortedNeighbours),
     sort_neighbours(UnsortedNeighbours, Neighbours).
 
@@ -186,12 +186,13 @@ fill_occupied([link(_, First, Second) | Links], Occupied, NewOccupied) :-
     set_occupied(Second, Occupied2, Occupied3),
     fill_occupied(Links, Occupied3, NewOccupied).
 
-% is_occupied(Pos, Occupied) succeeds if Pos in contained in Occupied.
-is_occupied(pos(R, C), [(Row, Columns) | Tail]) :-
+% unoccupied(Pos, Occupied) succeeds if Pos is not contained in Occupied.
+unoccupied(_, []).
+unoccupied(pos(R, C), [(Row, Columns) | Tail]) :-
     ( R == Row ->
-        memberchk(C, Columns)
+        \+ memberchk(C, Columns)
     ;
-        is_occupied(pos(R, C), Tail)
+        unoccupied(pos(R, C), Tail)
     ).
 
 % set_occupied(Pos, Occupied, NewOccupied) succeeds if NewOccupied contains all
