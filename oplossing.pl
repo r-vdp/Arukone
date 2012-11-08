@@ -23,6 +23,19 @@
 %                      een redelijk eenvoudige heuristiek gebruikt (eerst langs
 %                      de kanten proberen paden op te bouwen) die goed
 %                      samenwerkt met de heuristiek om de links te ordenen.
+%                      Om deze heuristiek nog beter te laten werken, kijk ik bij
+%                      het oproepen van find_path ook nog na of het doel van het
+%                      pad op de rand van de puzzel ligt en zo ja, verwissel ik
+%                      het doel met het startpunt. Dit zorgt ervoor dat er altijd
+%                      vertrokken wordt van een vakje op de rand.
+%                      Ik heb ook geprobeerd om deze check bij elke oproep van
+%                      do_find_path te doen, maar dit gaf gemengde resultaten.
+%                      Puzzel 11 werd vier maal sneller opgelost met deze
+%                      aanpassing maar puzzel 10 zo'n 500 keer trager.
+%                      Ik heb dus gekozen om deze aggressievere optimalisatie
+%                      niet toe te passen (er was geen tijd meer om grondig te
+%                      onderzoeken waarom puzzel 10 zo veel trager ging na deze
+%                      aanpassing).
 %
 %                      Voor de links kon een duurdere heuristiek toegepast
 %                      worden omdat deze heursitiek slechts eenmaal gebruikt
