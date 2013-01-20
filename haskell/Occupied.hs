@@ -10,10 +10,11 @@ module Occupied (
 
 import Data
 
+import Data.Map (Map)
 import qualified Data.Map as M
 
-newtype Occupied = Occ {getOccupied :: M.Map Integer [Integer] }
-  deriving (Show)
+newtype Occupied = Occ {getOccupied :: Map Integer [Integer] }
+  deriving Show
 
 emptyOcc :: Occupied
 emptyOcc = Occ M.empty
@@ -29,5 +30,5 @@ isOcc :: Occupied -> Pos -> Bool
 isOcc = flip isOcc'
 
 isOcc' :: Pos -> Occupied -> Bool
-isOcc' (Pos x y) = maybe False (y `elem`) . (M.lookup x) . getOccupied
+isOcc' (Pos x y) = maybe False (y `elem`) . M.lookup x . getOccupied
 

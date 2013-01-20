@@ -10,7 +10,7 @@ import qualified Arukone as A
 import Data
 import Puzzles
 
-solve :: (Show a) => Puzzle a -> Puzzle a
+solve :: Show a => Puzzle a -> Puzzle a
 solve (A.solve -> (x:_)) = x
 solve _                  = error "No solutions found!"
 

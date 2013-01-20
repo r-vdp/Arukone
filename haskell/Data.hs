@@ -31,18 +31,18 @@ data Link a = Link
 data Puzzle a = Puzzle
   { getSize  :: Size
   , getLinks :: [Link a]
-  } deriving (Read)
+  } deriving Read
 
-instance (Show a) => Show (Puzzle a) where
+instance Show a => Show (Puzzle a) where
   show = showPuzzle
 
-showPuzzle :: (Show a) => Puzzle a -> String
-showPuzzle = init . unlines . map toChars . toMaybes
+showPuzzle :: Show a => Puzzle a -> String
+showPuzzle = init . unlines . map toString . toMaybes
      
-toChars :: (Show a) => [Maybe a] -> [Char]
-toChars = intersperse ' ' . map maybeToChar
+toString :: Show a => [Maybe a] -> String
+toString = intersperse ' ' . map maybeToChar
 
-maybeToChar :: (Show a) => Maybe a -> Char
+maybeToChar :: Show a => Maybe a -> Char
 maybeToChar = fromMaybe ' ' . (>>= listToMaybe . show)
 
 toMaybes :: Puzzle a -> [[Maybe a]]
